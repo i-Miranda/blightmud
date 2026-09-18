@@ -1,0 +1,3 @@
+[submodule "plugins/mapper"]
+	path = plugins/mapper
+	url = https://github.com/blightmud/mapper.git
