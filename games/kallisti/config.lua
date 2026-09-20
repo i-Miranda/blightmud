@@ -25,7 +25,7 @@ trigger.add([=[^Account exists\.$]=], {}, function()
 	end
 end)
 
-trigger.add([=[^Top Nobility]=], {}, function()
+trigger.add([=[^\{ - Top Nobility - \}]=], {}, function()
 	logged_in = true
 	print(account.username .. " logged in successfully.")
 end)
@@ -33,5 +33,9 @@ end)
 trigger.add([=[^Active Character:\s*(\S+)\s+\[]=], {}, function(matches)
 	local character_name = matches[1]
 	print("Active Character: " .. character_name)
-	active_map = load_character_map(character_name)
+	load_character_map(character_name)
 end)
+
+dofile(os.getenv("HOME") .. "/.config/blightmud/games/kallisti/ui.lua")
+dofile(os.getenv("HOME") .. "/.config/blightmud/games/kallisti/character_sheet.lua")
+--dofile(os.getenv("HOME") .. "/.config/blightmud/games/kallisti/debug.lua")
