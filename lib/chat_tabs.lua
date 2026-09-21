@@ -14,6 +14,6 @@ blight.bind("f3", function() blight.switch_tab("combat") end)
 
 -- Optional: render tabs alongside the host topbar instead of on their
 -- own dedicated row (saves one row of screen real estate).
---if blight.set_tab_indicator_position then
---	blight.set_tab_indicator_position("inline")
---end
+if blight.set_tab_indicator_position then
+	blight.set_tab_indicator_position("row")
+end
