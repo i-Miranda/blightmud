@@ -6,13 +6,11 @@
 -- Expected configuration:
 --
 -- sheet_pane.setup({
---     name = "LoK",
---     command = "att",
+--     open_command = "att",
+--     close_command = false,
 --     start_pattern = "^[-]+$",
+--     logout_pattern = "^Goodbye!$",
 --     pane_width = 80,
---     sheet_file = "/tmp/lok-sheet",
---     sheet_tmp = "/tmp/lok-sheet.tmp",
---     pane_id_file = "/tmp/lok-sheet-pane",
 -- })
 ----------------------------------------------------------------------
 
@@ -45,6 +43,9 @@ function M.setup(game)
 	local pane_width = game.sheet.pane_width or 80
 
 	local capturing_sheet = false
+	local capture_requested = false
+	local capture_timeout = nil
+
 	local sheet_lines = {}
 
 	local body_trigger
@@ -95,6 +96,24 @@ function M.setup(game)
 		return false
 	end
 
+	local function cancel_capture()
+		capture_requested = false
+		capturing_sheet = false
+		sheet_lines = {}
+
+		if capture_timeout then
+			timer.remove(capture_timeout)
+			capture_timeout = nil
+		end
+
+		if body_trigger then
+			body_trigger:disable()
+		end
+
+		if prompt_trigger then
+			prompt_trigger:disable()
+		end
+	end
 
 	local function start_sheet_pane()
 		if not os.getenv("TMUX") then
@@ -158,6 +177,8 @@ function M.setup(game)
 
 
 	local function stop_sheet_pane()
+		cancel_capture()
+
 		local pane_id = read_pane_id()
 
 		if pane_id and pane_id ~= "" then
@@ -182,6 +203,12 @@ function M.setup(game)
 		end
 
 		capturing_sheet = false
+		capture_requested = false
+
+		if capture_timeout then
+			timer.remove(capture_timeout)
+			capture_timeout = nil
+		end
 
 		if body_trigger then
 			body_trigger:disable()
@@ -212,6 +239,7 @@ function M.setup(game)
 	end
 
 
+
 	------------------------------------------------------------------
 	-- Detect the first line of the character sheet
 	--
@@ -225,8 +253,15 @@ function M.setup(game)
 			gag = true
 		},
 		function(_, line)
-			if capturing_sheet then
+			if not capture_requested or capturing_sheet then
 				return
+			end
+
+			capture_requested = false
+
+			if capture_timeout then
+				timer.remove(capture_timeout)
+				capture_timeout = nil
 			end
 
 			capturing_sheet = true
@@ -290,6 +325,19 @@ function M.setup(game)
 
 	local function open_sheet()
 		ensure_sheet_pane()
+
+		if capture_timeout then
+			timer.remove(capture_timeout)
+			capture_timeout = nil
+		end
+
+		capture_requested = true
+
+		capture_timeout = timer.add(3, 1, function()
+			capture_requested = false
+			capture_timeout = nil
+		end)
+
 		mud.send(open_command, { gag = true })
 	end
 
