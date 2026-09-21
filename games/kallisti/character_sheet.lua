@@ -1,12 +1,17 @@
 ----------------------------------------------------------------------
--- Kallisti character-sheet capture and tmux display
+-- Kallisti character sheet capture and tmux display
 --
--- The pane is created the first time you type `att`.
--- It is removed when you type `logout`, `quit`, or `logoff`.
+-- Type `att` to:
+--   1. Open the tmux sheet pane if it is not already open.
+--   2. Send att to Kallisti.
+--   3. Capture and gag the returned character sheet.
+--   4. Display the colorized sheet in the tmux pane.
+--
+-- Type logout, quit, or logoff to close the sheet pane.
 ----------------------------------------------------------------------
 
 local sheet_file = "/tmp/kallisti-sheet"
-local sheet_tmp = sheet_file .. ".tmp"
+local sheet_tmp = "/tmp/kallisti-sheet.tmp"
 local pane_id_file = "/tmp/kallisti-sheet-pane"
 
 local capturing_sheet = false
@@ -17,7 +22,7 @@ local prompt_trigger
 
 
 ----------------------------------------------------------------------
--- tmux helpers
+-- tmux functions
 ----------------------------------------------------------------------
 
 local function read_pane_id()
@@ -47,8 +52,8 @@ local function pane_exists(pane_id)
 		return false
 	end
 
-	for listed_pane_id in process:lines() do
-		if listed_pane_id == pane_id then
+	for existing_id in process:lines() do
+		if existing_id == pane_id then
 			process:close()
 			return true
 		end
@@ -65,13 +70,9 @@ local function start_sheet_pane()
 		return
 	end
 
-	-- The pane runs a simple display loop. `-d` prevents tmux from
-	-- switching focus away from the Blightmud pane.
 	local command = [[
-		tmux split-window -d -h -l 80 -P -F '#{pane_id}' \
-		'sh -c "while :; do clear; \
-		cat /tmp/kallisti-sheet 2>/dev/null; sleep 0.25; \
-		done"'
+		tmux split-window -d -h -l 42 -P -F '#{pane_id}' \
+		'sh -c "while :; do clear; cat /tmp/kallisti-sheet 2>/dev/null; sleep 0.25; done"'
 	]]
 
 	local process = io.popen(command, "r")
@@ -96,7 +97,7 @@ local function start_sheet_pane()
 		file:close()
 	end
 
-	-- Make the pane display-only so it does not receive keyboard input.
+	-- Make the sheet pane display-only.
 	os.execute(
 		"tmux select-pane -d -t " .. pane_id .. " 2>/dev/null"
 	)
@@ -128,7 +129,7 @@ end
 
 
 ----------------------------------------------------------------------
--- Sheet-file handling
+-- Character-sheet file handling
 ----------------------------------------------------------------------
 
 local function finish_sheet_capture()
@@ -154,12 +155,12 @@ local function finish_sheet_capture()
 		return
 	end
 
-	-- Keep the ANSI escape sequences so colors survive in tmux.
+	-- Use the raw lines so ANSI color escape sequences are preserved.
 	file:write(table.concat(sheet_lines, "\n"))
 	file:write("\n")
 	file:close()
 
-	-- Replace the previous sheet only after the new one is complete.
+	-- Replace the old file only after the new file is complete.
 	os.remove(sheet_file)
 	os.rename(sheet_tmp, sheet_file)
 
@@ -168,14 +169,16 @@ end
 
 
 ----------------------------------------------------------------------
--- Capture the opening separator printed by `att`
+-- Start of the `att` output
+--
+-- Do not use raw = true here. The separator may contain ANSI codes,
+-- and we want the trigger to match the display/plain version.
 ----------------------------------------------------------------------
 
 local start_trigger = trigger.add(
-	"^[-]{80}$",
+	"^[-]+$",
 	{
-		gag = true,
-		raw = true
+		gag = true
 	},
 	function(matches, line)
 		if capturing_sheet then
@@ -183,6 +186,8 @@ local start_trigger = trigger.add(
 		end
 
 		capturing_sheet = true
+
+		-- Preserve colors in the saved file.
 		sheet_lines = {
 			line:raw()
 		}
@@ -194,7 +199,7 @@ local start_trigger = trigger.add(
 
 
 ----------------------------------------------------------------------
--- Capture and gag the ordinary sheet lines
+-- Capture the rest of the sheet
 ----------------------------------------------------------------------
 
 body_trigger = trigger.add(
@@ -213,7 +218,7 @@ body_trigger = trigger.add(
 
 
 ----------------------------------------------------------------------
--- Capture and gag the prompt after the sheet
+-- Detect the prompt after the sheet
 ----------------------------------------------------------------------
 
 prompt_trigger = trigger.add(
@@ -230,7 +235,7 @@ prompt_trigger = trigger.add(
 
 
 ----------------------------------------------------------------------
--- Open the pane automatically when `att` is used
+-- Replace the normal `att` command with an alias that opens the pane
 ----------------------------------------------------------------------
 
 alias.add("^att$", function()
