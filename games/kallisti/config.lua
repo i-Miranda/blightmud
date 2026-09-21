@@ -1,4 +1,4 @@
-dofile(os.getenv("HOME") .. "/.config/blightmud/games/kallisti/map_init.lua")
+dofile(blight.config_dir() .. "/games/kallisti/map_init.lua")
 
 local account = current_account
 local waiting_for_password = false
@@ -36,6 +36,6 @@ trigger.add([=[^Active Character:\s*(\S+)\s+\[]=], {}, function(matches)
 	load_character_map(character_name)
 end)
 
-dofile(os.getenv("HOME") .. "/.config/blightmud/games/kallisti/ui.lua")
-dofile(os.getenv("HOME") .. "/.config/blightmud/games/kallisti/character_sheet.lua")
---dofile(os.getenv("HOME") .. "/.config/blightmud/games/kallisti/debug.lua")
+dofile(blight.config_dir() .. "/games/kallisti/ui.lua")
+--dofile(blight.config_dir() .. "/games/kallisti/character_sheet.lua")
+--dofile(blight.config_dir() .. "/games/kallisti/debug.lua")

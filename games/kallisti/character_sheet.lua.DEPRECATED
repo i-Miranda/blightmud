@@ -71,7 +71,7 @@ local function start_sheet_pane()
 	end
 
 	local command = [[
-		tmux split-window -d -h -l 42 -P -F '#{pane_id}' \
+		tmux split-window -d -h -l 80 -P -F '#{pane_id}' \
 		'sh -c "while :; do clear; cat /tmp/kallisti-sheet 2>/dev/null; sleep 0.25; done"'
 	]]
 

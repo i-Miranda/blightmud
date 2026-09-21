@@ -1,22 +1,19 @@
-local config_dir = os.getenv("HOME") .. "/.config/blightmud/"
+local session = dofile(blight.config_dir() .. "/lib/session.lua")
 
-local games = dofile(config_dir .. "games/games.lua")
-local session = dofile(config_dir .. "lib/session.lua")
-local accounts = dofile(config_dir .. "accounts.lua")
-
-dofile(config_dir .. "plugins/mapper/main.lua")
+dofile(blight.config_dir() .. "/plugins/mapper/main.lua")
 
 local function reload_scripts()
+	print("Reloading scripts")
 	blight.status_height(1)
 	blight.status_line(0, "")
 	script.reset()
-	script.load(config_dir .. "init.lua")
+	script.load(blight.config_dir() .. "/init.lua")
 end
 
 alias.add("^reload$", reload_scripts)
 
 mud.on_connect(function(host, port)
-	session.on_connect(games, accounts, host, port)
+	session.on_connect(host, port)
 end)
 
 mud.on_disconnect(function()
@@ -24,4 +21,4 @@ mud.on_disconnect(function()
 	reload_scripts()
 end)
 
-session.restore(games, accounts)
+session.restore()

@@ -1,4 +1,4 @@
-local map_dir = os.getenv("HOME") .. "/.config/blightmud/games/kallisti/maps/"
+local map_dir = blight.config_dir() .. "/games/kallisti/maps/"
 
 function load_character_map(character_name)
 	if not character_name or character_name == "" then
